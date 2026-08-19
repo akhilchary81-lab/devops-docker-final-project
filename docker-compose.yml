@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: devops-final:v1
+    container_name: devops-app
+    ports:
+      - "8080:5000"
+    environment:
+      APP_ENV: development
+      DATABASE_NAME: devopsdb
+      DATABASE_USER: devops
+      DATABASE_PASSWORD: devops_password
+      DATABASE_HOST: database
+      DATABASE_PORT: "5432"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - devops-network
+    restart: unless-stopped
+
+  database:
+    image: postgres:16-alpine
+    container_name: devops-database
+    environment:
+      POSTGRES_DB: devopsdb
+      POSTGRES_USER: devops
+      POSTGRES_PASSWORD: wrong_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - devops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devops -d devopsdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  devops-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
